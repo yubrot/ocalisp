@@ -16,12 +16,10 @@ You can use either ocamlbuild or omake:
 The design of the implementation is heavily inspired by [SECD machine](https://en.wikipedia.org/wiki/SECD_machine).
 For example, the semantics of [Vm.state](vm.ml#L39) is almost same as SECD machine registers.
 
-At [Vm.eval](vm.ml#L342), every S-expression is compiled into [a code, a sequence of VM instructions](vm.ml#L4) after macro expansion.
-After the compilation, code execution process is performed by running instruction cycle at [Vm.Exec.run](vm.ml#L304).
+At [Vm.eval](vm.ml#L345), every S-expression is compiled into [a code, a sequence of VM instructions](vm.ml#L4) after macro expansion.
+After the compilation, code execution process is performed by running instruction cycle at [Vm.Exec.run](vm.ml#L307).
 
 ### Examples of VM codes
-
-TODO Add descriptions
 
 #### ldc
 
@@ -29,9 +27,7 @@ TODO Add descriptions
 > "literal"
 [0 entry]
   ldc "literal"
-```
 
-```
 > '(foo bar)
 [0 entry]
   ldc (foo bar)
@@ -45,7 +41,24 @@ TODO Add descriptions
   ldv hoge
 ```
 
-#### sel and leave
+#### ldf, ldm
+
+```
+> (fun () 123)
+[0 entry]
+  ldf [1 fun ()]
+[1 fun ()]
+  ldc 123
+  leave
+
+> (macro () 456)
+[0 entry]
+  ldm [1 macro ()]
+[1 macro ()]
+  ldc 456
+```
+
+#### sel, leave
 
 ```
 > (if foo bar baz)
@@ -69,9 +82,7 @@ TODO Add descriptions
   ldv a
   ldv b
   app 2
-```
 
-```
 (+ foo (* bar baz) qux)
 [0 entry]
   ldv +
@@ -82,22 +93,6 @@ TODO Add descriptions
   app 2
   ldv qux
   app 3
-```
-
-#### ldf and leave
-
-```
-> ((fun (x y) (println y)) "hoge" "fuga")
-[0 entry]
-  ldf [1 fun (x y)]
-  ldc "hoge"
-  ldc "fuga"
-  app 2
-[1 fun (x y)]
-  ldv println
-  ldv y
-  app 1
-  leave
 ```
 
 #### pop
@@ -113,13 +108,19 @@ TODO Add descriptions
   app 0
 ```
 
-#### def
+#### def, set
 
 ```
 > (def x 123)
 [0 entry]
   ldc 123
   def x
+  ldc ()
+
+> (set! x 123)
+[0 entry]
+  ldc 123
+  set x
   ldc ()
 ```
 

@@ -257,13 +257,16 @@ module Exec = struct
 
   let capture_cont state =
     let { stack; env; code; dump } = state in
+    let ret v =
+      state.stack <- stack;
+      state.env <- env;
+      state.code <- code;
+      state.dump <- dump;
+      push state v
+    in
     let run state = function
-      | [x] ->
-        state.stack <- stack;
-        state.env <- env;
-        state.code <- code;
-        state.dump <- dump;
-        push state x
+      | [] -> ret Sexp.Nil
+      | [x] -> ret x
       | _ -> raise (Evaluation_error "Multiple values are not implemented")
     in
     Sexp.Pure (Builtin { run })
