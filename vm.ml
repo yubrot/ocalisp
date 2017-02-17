@@ -348,7 +348,7 @@ let eval context s =
     *)
     let code = compile context.toplevel s in
     (*
-    print_endline "Compiled VM instructions:";
+    print_endline "Compiled VM code:";
     print_endline (Code.to_string code);
     *)
     let result = exec context context.toplevel code in
