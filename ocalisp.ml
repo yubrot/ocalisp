@@ -31,7 +31,7 @@ let repl state =
 let () =
   let state = Vm.create () in
   Builtins.register state;
-  exec_file state "boot.lisp";
+  exec_file state "lispboot/boot.lisp";
   match Sys.argv with
   | [| _; src |] -> exec_file state src
   | _ -> repl state
