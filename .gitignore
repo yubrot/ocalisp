@@ -1,0 +1,22 @@
+# executable
+ocalisp*
+!ocalisp.ml
+
+# ocamlbuild
+_build
+
+# omake
+.omakedb*
+*.omc
+
+# lexer
+lexer.*
+!lexer.mll
+
+# parser
+parser.*
+!parser.mly
+
+*.cmi
+*.cmx
+*.o

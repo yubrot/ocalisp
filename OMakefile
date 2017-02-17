@@ -1,0 +1,19 @@
+PROGRAM = ocalisp
+
+MENHIR_ENABLED = true
+
+FILES[] =
+   parser
+   lexer
+   sexp
+   env
+   vm
+   builtins
+   ocalisp
+
+OCamlGeneratedFiles(parser.ml lexer.ml)
+
+.PHONY: $(PROGRAM)
+.DEFAULT: $(PROGRAM)
+
+$(PROGRAM): $(OCamlProgram $(PROGRAM), $(FILES))
