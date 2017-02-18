@@ -8,6 +8,7 @@ module Value : sig
 
   val to_string : t -> string
   val is_proc : t -> bool
+  val is_meta : t -> bool
 end
 
 type t

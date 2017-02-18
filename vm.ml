@@ -65,6 +65,10 @@ module Value = struct
     | Sexp.Pure (Fun _ | Builtin _) -> true
     | _ -> false
 
+  let is_meta = function
+    | Sexp.Pure (Macro _ | Syntax _) -> true
+    | _ -> false
+
   let on_env env = function
     | Sexp.Sym sym -> Env.find sym env
     | _ -> None
