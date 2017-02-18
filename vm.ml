@@ -286,7 +286,7 @@ module Exec = struct
         | _ -> raise (Evaluation_error ("Unsupported builtin: " ^ b))
       end
     | Sel (a, b) ->
-      let branch_code = match pop state with Sexp.False -> b | _ -> a in
+      let branch_code = if Sexp.to_bool (pop state) then a else b in
       enter state (Env.create (Some state.env)) branch_code
     | App argc ->
       let args = ref [] in

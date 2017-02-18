@@ -12,6 +12,7 @@ val of_list : 'a t list -> 'a t
 val of_bool : bool -> 'a t
 
 val to_list : 'a t -> 'a t list option
+val to_bool : 'a t -> bool
 
 val quote : 'a t -> 'a t
 val quasiquote : 'a t -> 'a t

@@ -15,7 +15,7 @@ let of_bool = function
   | true -> True
   | false -> False
 
-let rec to_list s = match s with
+let rec to_list = function
   | Nil -> Some []
   | Cons (a, b) ->
     begin match to_list b with
@@ -23,6 +23,10 @@ let rec to_list s = match s with
       | None -> None
     end
   | _ -> None
+
+let to_bool = function
+  | False -> false
+  | _ -> true
 
 let quote s =
   of_list [Sym "quote"; s]
