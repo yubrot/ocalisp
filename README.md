@@ -37,12 +37,31 @@ After the compilation, code execution process is performed by running instructio
   ldc (foo bar)
 ```
 
+Expressions like literals or quoted S-expressions are compiled into `ldc`.
+
 #### ldv
 
 ```
 > hoge
 [0 entry]
   ldv hoge
+```
+
+Unlike `ld` of SECD machine, the variable is determined dynamically by lookup on the current environment.
+
+#### sel, leave
+
+```
+> (if foo bar baz)
+[0 entry]
+  ldv foo
+  sel [1 then] [2 else]
+[1 then]
+  ldv bar
+  leave
+[2 else]
+  ldv baz
+  leave
 ```
 
 #### ldf, ldm
@@ -62,20 +81,7 @@ After the compilation, code execution process is performed by running instructio
   ldc 456
 ```
 
-#### sel, leave
-
-```
-> (if foo bar baz)
-[0 entry]
-  ldv foo
-  sel [1 then] [2 else]
-[1 then]
-  ldv bar
-  leave
-[2 else]
-  ldv baz
-  leave
-```
+Notice that I merged SECD machine's `join` and `ret` into one instruction named `leave`.
 
 #### app
 
