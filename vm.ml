@@ -5,8 +5,8 @@ type code = inst list
 and inst =
   | Ldc of value
   | Ldv of string
-  | Ldf of params * code
-  | Ldm of params * code
+  | Ldf of pattern * code
+  | Ldm of pattern * code
   | Ldb of string
   | Sel of code * code
   | App of int
@@ -15,16 +15,16 @@ and inst =
   | Def of string
   | Set of string
 
-and params = {
+and pattern = {
   fixed: string list;
   rest: string option;
 }
 
 and value = native Sexp.t
 and native =
-  | Fun of env * params * code
+  | Fun of env * pattern * code
   | Builtin of builtin
-  | Macro of env * params * code
+  | Macro of env * pattern * code
   | Syntax of syntax
 
 and builtin = {
@@ -75,8 +75,8 @@ module Value = struct
 end
 
 
-module Params = struct
-  type t = params
+module Pattern = struct
+  type t = pattern
 
   let to_string { fixed; rest } =
     let fixed = List.map (fun sym -> Sexp.Sym sym) fixed in
@@ -89,21 +89,25 @@ module Params = struct
   let rec build = function
     | Sexp.Sym sym -> { fixed = []; rest = Some sym }
     | Sexp.Nil -> { fixed = []; rest = None }
-    | Sexp.Cons (Sexp.Sym sym, b) ->
-      let { fixed; rest } = build b in
-      { fixed = sym :: fixed; rest }
-    | s -> raise (Evaluation_error ("Unsupported params: " ^ Value.to_string s))
+    | Sexp.Cons (a, b) ->
+      begin match a with
+      | Sexp.Sym sym ->
+        let { fixed; rest } = build b in
+        { fixed = sym :: fixed; rest }
+      | a -> raise (Evaluation_error ("Unsupported pattern: " ^ Value.to_string a))
+      end
+    | s -> raise (Evaluation_error ("Unsupported pattern: " ^ Value.to_string s))
 
-  let bind params args env =
+  let bind pattern args env =
     let argument_error prefix =
-      raise (Evaluation_error ("This function takes " ^ prefix ^ string_of_int (List.length params.fixed) ^ " arguments"))
+      raise (Evaluation_error ("This function takes " ^ prefix ^ string_of_int (List.length pattern.fixed) ^ " arguments"))
     in
     let rec bind_fixed = function
-      | param :: params, arg :: args -> Env.def param arg env; bind_fixed (params, args)
+      | p :: pattern, arg :: args -> Env.def p arg env; bind_fixed (pattern, args)
       | [], args -> args
       | _, [] -> argument_error "at least "
     in
-    match params.rest, bind_fixed (params.fixed, args) with
+    match pattern.rest, bind_fixed (pattern.fixed, args) with
     | Some k, rest_args -> Env.def k (Sexp.of_list rest_args) env
     | None, [] -> ()
     | None, rest_args -> argument_error ""
@@ -118,8 +122,8 @@ module Code = struct
     let rec inst_to_string = function
       | Ldc c -> "ldc " ^ Value.to_string c
       | Ldv v -> "ldv " ^ v
-      | Ldf (params, code) -> "ldf " ^ add_code ("fun " ^ Params.to_string params) code
-      | Ldm (params, code) -> "ldm " ^ add_code ("macro " ^ Params.to_string params) code
+      | Ldf (pattern, code) -> "ldf " ^ add_code ("fun " ^ Pattern.to_string pattern) code
+      | Ldm (pattern, code) -> "ldm " ^ add_code ("macro " ^ Pattern.to_string pattern) code
       | Ldb s -> "ldb " ^ s
       | Sel (a, b) ->
         let a = add_code "then" a in
@@ -187,12 +191,12 @@ let syntax_env =
     | _ -> raise (Evaluation_error "Syntax error: expected (if cond then else)")
   in
   let compile_fun compile = function
-    | params :: body -> [Ldf (Params.build params, compile_begin compile body @ [Leave])]
-    | [] -> raise (Evaluation_error "Syntax error: expected (fun params body...)")
+    | pattern :: body -> [Ldf (Pattern.build pattern, compile_begin compile body @ [Leave])]
+    | [] -> raise (Evaluation_error "Syntax error: expected (fun pattern body...)")
   in
   let compile_macro compile = function
-    | params :: body -> [Ldm (Params.build params, compile_begin compile body)]
-    | [] -> raise (Evaluation_error "Syntax error: expected (macro params body...)")
+    | pattern :: body -> [Ldm (Pattern.build pattern, compile_begin compile body)]
+    | [] -> raise (Evaluation_error "Syntax error: expected (macro pattern body...)")
   in
   let compile_builtin compile = function
     | [Sexp.Sym sym] -> [Ldb sym]
@@ -251,9 +255,9 @@ module Exec = struct
     | [] -> raise (Internal_error "Inconsistent dump")
 
   let apply state f args = match f with
-    | Sexp.Pure (Fun (fenv, fparams, fbody_code)) ->
+    | Sexp.Pure (Fun (fenv, fpat, fbody_code)) ->
       enter state (Env.create (Some fenv)) fbody_code;
-      Params.bind fparams args state.env
+      Pattern.bind fpat args state.env
     | Sexp.Pure (Builtin builtin) ->
       builtin.run state args
     | _ ->
@@ -280,10 +284,10 @@ module Exec = struct
       push state v
     | Ldv k ->
       push state (Env.get k state.env)
-    | Ldf (params, code) ->
-      push state (Sexp.Pure (Fun (state.env, params, code)))
-    | Ldm (params, code) ->
-      push state (Sexp.Pure (Macro (state.env, params, code)))
+    | Ldf (pattern, code) ->
+      push state (Sexp.Pure (Fun (state.env, pattern, code)))
+    | Ldm (pattern, code) ->
+      push state (Sexp.Pure (Macro (state.env, pattern, code)))
     | Ldb b ->
       begin match Hashtbl.find_all state.context.builtins b with
         | builtin :: _ -> push state (Sexp.Pure (Builtin builtin))
@@ -328,9 +332,9 @@ let macroexpand recurse context =
   let rec expand s = match Sexp.to_list s with
     | Some (f :: args) ->
       begin match Value.on_env context.toplevel f with
-        | Some (Sexp.Pure (Macro (menv, mparams, mbody_code))) ->
+        | Some (Sexp.Pure (Macro (menv, mpat, mbody_code))) ->
           let env = Env.create (Some menv) in
-          Params.bind mparams args env;
+          Pattern.bind mpat args env;
           let s = exec context env mbody_code in
           if recurse then expand s else s
         | Some (Sexp.Pure (Syntax syntax)) ->

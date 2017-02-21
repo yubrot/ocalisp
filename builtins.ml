@@ -176,9 +176,9 @@ let builtin_newline state = function
   | [] -> print_newline (); push state Sexp.Nil
   | _ -> evaluation_error "Builtin function car takes no arguments"
 
-let builtin_show state = function
+let builtin_inspect state = function
   | [x] -> push state (Sexp.Str (Vm.Value.to_string x))
-  | _ -> evaluation_error "Builtin function show takes one argument"
+  | _ -> evaluation_error "Builtin function inspect takes one argument"
 
 let register context =
   List.iter (fun (name, f) ->
@@ -229,5 +229,5 @@ let register context =
     "print", builtin_print;
     "newline", builtin_newline;
 
-    "show", builtin_show;
+    "inspect", builtin_inspect;
   ]
