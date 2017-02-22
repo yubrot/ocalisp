@@ -4,16 +4,11 @@ type +'a t =
   | Str of string
   | Cons of 'a t * 'a t
   | Nil
-  | True
-  | False
+  | Bool of bool
   | Pure of 'a
 
 let of_list ss =
   List.fold_right (fun a b -> Cons (a, b)) ss Nil
-
-let of_bool = function
-  | true -> True
-  | false -> False
 
 let rec to_list = function
   | Nil -> Some []
@@ -24,8 +19,8 @@ let rec to_list = function
     end
   | _ -> None
 
-let to_bool = function
-  | False -> false
+let test = function
+  | Bool b -> b
   | _ -> true
 
 let quote s =
@@ -56,8 +51,8 @@ let to_string pure_to_string =
     | Cons (Sym "unquote-splicing", Cons (s, Nil)) -> ",@" ^ to_string s
     | Cons (a, b) -> "(" ^ cons_to_string a b ^ ")"
     | Nil -> "()"
-    | True -> "#t"
-    | False -> "#f"
+    | Bool true -> "#t"
+    | Bool false -> "#f"
     | Pure p -> pure_to_string p
   and cons_to_string a b =
     match b with

@@ -169,7 +169,7 @@ let compile compile_env =
   compile
 
 
-let syntax_env =
+let syntax_env () =
   let compile_def compile = function
     | [Sexp.Sym sym; x] -> compile x @ [Def sym; Ldc Sexp.Nil]
     | _ -> raise (Evaluation_error "Syntax error: expected (def sym x)")
@@ -294,7 +294,7 @@ module Exec = struct
         | _ -> raise (Evaluation_error ("Unsupported builtin: " ^ b))
       end
     | Sel (a, b) ->
-      let branch_code = if Sexp.to_bool (pop state) then a else b in
+      let branch_code = if Sexp.test (pop state) then a else b in
       enter state (Env.create (Some state.env)) branch_code
     | App argc ->
       let args = ref [] in
@@ -323,22 +323,22 @@ end
 
 
 let create () =
-  { toplevel = Env.create (Some syntax_env); builtins = Hashtbl.create 0; }
+  { toplevel = Env.create (Some (syntax_env ())); builtins = Hashtbl.create 0; }
 
 let exec context env code =
   Exec.run { stack = []; env; code; dump = []; context }
 
 let macroexpand recurse context =
   let rec expand s = match Sexp.to_list s with
-    | Some (f :: args) ->
-      begin match Value.on_env context.toplevel f with
+    | Some (m :: args) ->
+      begin match Value.on_env context.toplevel m with
         | Some (Sexp.Pure (Macro (menv, mpat, mbody_code))) ->
           let env = Env.create (Some menv) in
           Pattern.bind mpat args env;
           let s = exec context env mbody_code in
           if recurse then expand s else s
         | Some (Sexp.Pure (Syntax syntax)) ->
-          if recurse then Sexp.of_list (f :: syntax.expand expand args) else s
+          if recurse then Sexp.of_list (m :: syntax.expand expand args) else s
         | _ -> expand_children s
       end
     | _ -> expand_children s

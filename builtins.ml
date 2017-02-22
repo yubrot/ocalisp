@@ -21,10 +21,12 @@ let builtin_cons state = function
   | _ -> evaluation_error "Builtin function cons takes 2 arguments"
 
 let builtin_exit state = function
+  | [] -> exit 0
   | [Sexp.Num n] -> exit (int_of_float n)
   | _ -> evaluation_error "Builtin function exit takes a number argument"
 
 let builtin_error state = function
+  | [] -> evaluation_error "error called"
   | [Sexp.Str s] -> evaluation_error s
   | _ -> evaluation_error "Builtin function error takes a string argument"
 
@@ -37,12 +39,12 @@ let builtin_gensym () =
 let builtin_car state = function
   | [Sexp.Cons (a, _)] -> push state a
   | [s] -> type_error "Not a cons" s
-  | _ -> evaluation_error "Builtin function car takes 1 argument"
+  | _ -> evaluation_error "Builtin function car takes one argument"
 
 let builtin_cdr state = function
   | [Sexp.Cons (_, b)] -> push state b
   | [x] -> type_error "Not a cons" x
-  | _ -> evaluation_error "Builtin function car takes 1 argument"
+  | _ -> evaluation_error "Builtin function car takes one argument"
 
 let builtin_apply state = function
   | [f; args] ->
@@ -53,8 +55,8 @@ let builtin_apply state = function
   | _ -> evaluation_error "Builtin function apply takes 2 arguments"
 
 let builtin_test name test state = function
-  | [x] -> push state (Sexp.of_bool (test x))
-  | _ -> evaluation_error ("Builtin function " ^ name ^ " takes 1 argument")
+  | [x] -> push state (Sexp.Bool (test x))
+  | _ -> evaluation_error ("Builtin function " ^ name ^ " takes one argument")
 
 let builtin_test_num = builtin_test "num?" @@ function
   | Sexp.Num _ -> true
@@ -77,7 +79,7 @@ let builtin_test_nil = builtin_test "nil?" @@ function
   | _ -> false
 
 let builtin_test_bool = builtin_test "bool?" @@ function
-  | Sexp.True | Sexp.False -> true
+  | Sexp.Bool _ -> true
   | _ -> false
 
 let builtin_test_proc = builtin_test "proc?" Vm.Value.is_proc
@@ -109,7 +111,7 @@ let builtin_concat state args =
 
 let builtin_length state = function
   | [Sexp.Str s] -> push state (Sexp.Num (float_of_int (String.length s)))
-  | _ -> evaluation_error "Builtin function error takes a string argument"
+  | _ -> evaluation_error "Builtin function length takes a string argument"
 
 let builtin_eq state args =
   let rec equal a b = Sexp.(match a, b with
@@ -117,28 +119,29 @@ let builtin_eq state args =
       | Sym a, Sym b -> a = b
       | Str a, Str b -> a = b
       | Cons (a, a'), Cons (b, b') -> equal a b && equal a' b'
-      | Nil, Nil | True, True | False, False -> true
+      | Nil, Nil -> true
+      | Bool a, Bool b -> a = b
       | _, _ -> false
     )
   in
   match args with
-  | [] -> push state Sexp.True
-  | x :: xs -> push state (Sexp.of_bool (List.for_all (equal x) xs))
+  | [] -> push state (Sexp.Bool true)
+  | x :: xs -> push state (Sexp.Bool (List.for_all (equal x) xs))
 
 let builtin_compare op num_compare str_compare state args =
-  let rec test compare x xs = match xs with
+  let rec cmp compare x xs = match xs with
     | [] -> true
-    | y :: xs -> compare x y && test compare y xs
+    | y :: xs -> compare x y && cmp compare y xs
   in
   match args with
-  | [] -> push state Sexp.True
+  | [] -> push state (Sexp.Bool true)
   | x :: xs -> Sexp.(match x with
       | Num x ->
         let xs = extract_numbers op xs in
-        push state (Sexp.of_bool (test num_compare x xs))
+        push state (Sexp.Bool (cmp num_compare x xs))
       | Str x ->
         let xs = extract_strings op xs in
-        push state (Sexp.of_bool (test str_compare x xs))
+        push state (Sexp.Bool (cmp str_compare x xs))
       | x -> type_error ("Operator " ^ op ^ " is only defined for strings and numbers") x
     )
 
@@ -151,7 +154,7 @@ let builtin_callcc state = function
   | [f] ->
     let cont = capture_cont state in
     apply state f [cont]
-  | _ -> evaluation_error ("Builtin function call/cc takes 1 argument")
+  | _ -> evaluation_error ("Builtin function call/cc takes one argument")
 
 let builtin_eval state = function
   | [s] ->
@@ -159,11 +162,11 @@ let builtin_eval state = function
       | Ok v -> push state v
       | Error e -> evaluation_error ("on eval: " ^ e)
     end
-  | _ -> evaluation_error ("Builtin function eval takes 1 argument")
+  | _ -> evaluation_error ("Builtin function eval takes one argument")
 
 let builtin_macroexpand name recurse state = function
   | [s] -> push state (Vm.macroexpand recurse (Vm.context state) s)
-  | _ -> evaluation_error ("Builtin function " ^ name ^ " takes 1 argument")
+  | _ -> evaluation_error ("Builtin function " ^ name ^ " takes one argument")
 
 let builtin_print state args =
   List.iter (function
@@ -174,7 +177,7 @@ let builtin_print state args =
 
 let builtin_newline state = function
   | [] -> print_newline (); push state Sexp.Nil
-  | _ -> evaluation_error "Builtin function car takes no arguments"
+  | _ -> evaluation_error "Builtin function newline takes no arguments"
 
 let builtin_inspect state = function
   | [x] -> push state (Sexp.Str (Vm.Value.to_string x))

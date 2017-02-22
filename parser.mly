@@ -21,8 +21,8 @@ s
   | NUM { Sexp.Num $1 }
   | SYM { Sexp.Sym $1 }
   | STR { Sexp.Str $1 }
-  | TRUE { Sexp.True }
-  | FALSE { Sexp.False }
+  | TRUE { Sexp.Bool true }
+  | FALSE { Sexp.Bool false }
 s_quoted
   : QUOTE s { Sexp.quote $2 }
   | QUASIQUOTE s { Sexp.quasiquote $2 }

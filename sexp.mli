@@ -4,15 +4,13 @@ type +'a t =
   | Str of string
   | Cons of 'a t * 'a t
   | Nil
-  | True
-  | False
+  | Bool of bool
   | Pure of 'a
 
 val of_list : 'a t list -> 'a t
-val of_bool : bool -> 'a t
-
 val to_list : 'a t -> 'a t list option
-val to_bool : 'a t -> bool
+
+val test : 'a t -> bool
 
 val quote : 'a t -> 'a t
 val quasiquote : 'a t -> 'a t
