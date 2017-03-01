@@ -1,37 +1,45 @@
-let parse p buf = try
-    Ok (p Lexer.read buf)
-  with
-  | _ -> Error "Parse error: TODO provide error location"
+let exec ctx lexbuf =
+  match Lexer.parse_program lexbuf with
+  | Ok program ->
+    let rec exec_all = function
+      | [] -> Ok ()
+      | s :: rest -> match Vm.eval ctx s with
+        | Ok _ -> exec_all rest
+        | Error e -> Error e
+    in
+    exec_all program
+  | Error e -> Error e
 
-let exec_file state src =
-  let buf = Lexing.from_channel (open_in src) in
-  match parse Parser.program buf with
-  | Ok program -> List.iter (fun s ->
-      match Vm.eval state s with
-      | Ok _ -> ()
-      | Error e -> print_endline e; exit 1
-    ) program
-  | Error e -> print_endline e
+let exec_file ctx file =
+  match exec ctx (Lexing.from_channel (open_in file)) with
+  | Ok _ -> ()
+  | Error e -> prerr_endline e
 
-let repl state =
-  print_endline "[ocalisp REPL]";
-  let buf = Lexing.from_channel stdin in
+let repl ctx =
+  prerr_endline "[ocalisp REPL]";
+  let lexbuf = Lexing.from_channel stdin in
   while true do
-    print_string "> ";
-    flush stdout;
-    match parse Parser.s buf with
+    prerr_string "> ";
+    flush stderr;
+    match Lexer.parse_line lexbuf with
     | Ok s ->
-      begin match Vm.eval state s with
+      begin match Vm.eval ctx s with
         | Ok v -> print_endline (Vm.Value.to_string v)
-        | Error e -> print_endline e
+        | Error e -> prerr_endline e
       end
-    | Error e -> print_endline e
+    | Error e -> prerr_endline e
   done
 
+let boot ctx =
+  Builtins.register ctx;
+  let lexbuf = Lexing.from_channel (open_in "lispboot/boot.lisp") in
+  match exec ctx lexbuf with
+  | Ok _ -> ()
+  | Error e -> prerr_endline e; exit 1
+
 let () =
-  let state = Vm.create () in
-  Builtins.register state;
-  exec_file state "lispboot/boot.lisp";
+  let ctx = Vm.create () in
   match Sys.argv with
-  | [| _; src |] -> exec_file state src
-  | _ -> repl state
+  | [| _; "-test"; test |] -> Builtins.register ctx; Testrunner.run ctx test
+  | [| _; file |] -> boot ctx; exec_file ctx file
+  | _ -> boot ctx; repl ctx

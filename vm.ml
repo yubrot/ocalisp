@@ -150,7 +150,7 @@ module Code = struct
 end
 
 
-let compile compile_env =
+let compile_exn compile_env =
   let rec compile = function
     | Sexp.Sym sym -> [Ldv sym]
     | Sexp.Cons _ as s ->
@@ -322,20 +322,17 @@ module Exec = struct
 end
 
 
-let create () =
-  { toplevel = Env.create (Some (syntax_env ())); builtins = Hashtbl.create 0; }
-
-let exec context env code =
+let exec_exn context env code =
   Exec.run { stack = []; env; code; dump = []; context }
 
-let macroexpand recurse context =
+let macroexpand_exn recurse context =
   let rec expand s = match Sexp.to_list s with
     | Some (m :: args) ->
       begin match Value.on_env context.toplevel m with
         | Some (Sexp.Pure (Macro (menv, mpat, mbody_code))) ->
           let env = Env.create (Some menv) in
           Pattern.bind mpat args env;
-          let s = exec context env mbody_code in
+          let s = exec_exn context env mbody_code in
           if recurse then expand s else s
         | Some (Sexp.Pure (Syntax syntax)) ->
           if recurse then Sexp.of_list (m :: syntax.expand expand args) else s
@@ -350,28 +347,29 @@ let macroexpand recurse context =
   in
   expand
 
-let eval context s =
+let try_context f =
   try
-    let s = macroexpand true context s in
-    (*
-    print_endline "Macro expanded:";
-    print_endline (Value.to_string s);
-    *)
-    let code = compile context.toplevel s in
-    (*
-    print_endline "Compiled VM code:";
-    print_endline (Code.to_string code);
-    *)
-    let result = exec context context.toplevel code in
-    (*
-    print_endline "Result:";
-    print_endline (Value.to_string result);
-    *)
-    Ok result
+    Ok (f ())
   with
   | Env.UndefinedVariable e -> Error ("Undefined variable: " ^ e)
   | Internal_error e -> Error ("Internal error: " ^ e)
   | Evaluation_error e -> Error ("Evaluation error: " ^ e)
+
+let create () =
+  { toplevel = Env.create (Some (syntax_env ())); builtins = Hashtbl.create 0; }
+
+let compile context value =
+  try_context (fun _ -> compile_exn context.toplevel value)
+
+let macroexpand recurse context value =
+  try_context (fun _ -> macroexpand_exn recurse context value)
+
+let eval context s =
+  try_context (fun _ ->
+      let s = macroexpand_exn true context s in
+      let code = compile_exn context.toplevel s in
+      exec_exn context context.toplevel code
+    )
 
 let context state =
   state.context

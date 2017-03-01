@@ -158,14 +158,22 @@ let builtin_callcc state = function
 
 let builtin_eval state = function
   | [s] ->
-    begin match Vm.eval (Vm.context state) s with
-      | Ok v -> push state v
-      | Error e -> evaluation_error ("on eval: " ^ e)
-    end
+    let result =
+      match Vm.eval (Vm.context state) s with
+      | Ok v -> Sexp.Cons (Sexp.Bool true, v)
+      | Error e -> Sexp.Cons (Sexp.Bool false, Sexp.Str e)
+    in
+    push state result
   | _ -> evaluation_error ("Builtin function eval takes one argument")
 
 let builtin_macroexpand name recurse state = function
-  | [s] -> push state (Vm.macroexpand recurse (Vm.context state) s)
+  | [s] ->
+    let result =
+      match Vm.macroexpand recurse (Vm.context state) s with
+      | Ok v -> Sexp.Cons (Sexp.Bool true, v)
+      | Error e -> Sexp.Cons (Sexp.Bool false, Sexp.Str e)
+    in
+    push state result
   | _ -> evaluation_error ("Builtin function " ^ name ^ " takes one argument")
 
 let builtin_print state args =

@@ -5,16 +5,21 @@ type native
 
 module Value : sig
   type t = native Sexp.t
-
   val to_string : t -> string
   val is_proc : t -> bool
   val is_meta : t -> bool
 end
 
+module Code : sig
+  type t
+  val to_string : t -> string
+end
+
 type t
 
 val create : unit -> t
-val macroexpand : bool -> t -> Value.t -> Value.t
+val compile : t -> Value.t -> (Code.t, string) result
+val macroexpand : bool -> t -> Value.t -> (Value.t, string) result
 val eval : t -> Value.t -> (Value.t, string) result
 
 module Exec : sig

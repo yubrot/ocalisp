@@ -41,3 +41,13 @@ and read_string s = parse
   | [^ '"' '\\']+ { read_string (s ^ lexeme lexbuf) lexbuf }
   | _ { raise (SyntaxError ("Illegal string character: " ^ lexeme lexbuf)) }
   | eof { raise (SyntaxError "String is not terminated") }
+
+{
+  let parse_program lexbuf =
+    try Ok (Parser.program read lexbuf)
+    with _ -> Error "Parse error"
+
+  let parse_line lexbuf =
+    try Ok (Parser.s read lexbuf)
+    with _ -> Error "Parse error"
+}

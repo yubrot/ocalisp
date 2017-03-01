@@ -9,6 +9,7 @@ FILES[] =
    env
    vm
    builtins
+   testrunner
    ocalisp
 
 OCamlGeneratedFiles(parser.ml lexer.ml)
