@@ -1,4 +1,5 @@
 {
+  open Compat
   open Parser
   open Lexing
   exception SyntaxError of string

@@ -1,4 +1,4 @@
-ocalisp
+ocalisp (Reason branch)
 ==
 
 ocalisp is a tiny Lisp-1 implementation.
@@ -6,14 +6,8 @@ This is my hobby project to learn OCaml.
 
 ## Build and run
 
-You can use either ocamlbuild or omake:
-
-    $ ocamlbuild -use-menhir ocalisp.native
-    $ omake
-
-Then you can run ocalisp:
-
-    $ ./ocalisp lispboot/examples/conways-gol.lisp
+    $ rebuild -use-menhir ocalisp.native
+    $ ./ocalisp.native lispboot/examples/conways-gol.lisp
 
 ## Internal
 
