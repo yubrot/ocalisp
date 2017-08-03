@@ -19,4 +19,6 @@ parser.*
 
 *.cmi
 *.cmx
+*.cmxa
 *.o
+*.a

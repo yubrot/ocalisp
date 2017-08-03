@@ -1,0 +1,8 @@
+FILES[] =
+	testrunner
+	main
+
+OCAMLINCLUDES += ../lib
+OCAML_LIBS[] += ../lib/libocalisp
+
+OCamlProgram(ocalisp, $(FILES))

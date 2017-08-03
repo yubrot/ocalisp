@@ -1,20 +1,21 @@
-PROGRAM = ocalisp
-
+NATIVE_ENABLED = $(OCAMLOPT_EXISTS)
+BYTE_ENABLED = $(not $(NATIVE_ENABLED))
 MENHIR_ENABLED = true
 
-FILES[] =
-   parser
-   lexer
-   sexp
-   env
-   vm
-   builtins
-   testrunner
-   ocalisp
+OCAMLFLAGS += -safe-string
+MENHIR_FLAGS += --infer --explain
 
-OCamlGeneratedFiles(parser.ml lexer.ml)
+USE_OCAMLFIND = true
 
-.PHONY: $(PROGRAM)
-.DEFAULT: $(PROGRAM)
+.SUBDIRS: lib driver
+	
+.PHONY: all test
+.DEFAULT: all
 
-$(PROGRAM): $(OCamlProgram $(PROGRAM), $(FILES))
+all: ocalisp test
+
+ocalisp: driver/ocalisp$(EXE)
+	cp driver/ocalisp$(EXE) .
+
+test: ocalisp lispboot/test
+	./ocalisp -test lispboot/test

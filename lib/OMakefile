@@ -1,0 +1,11 @@
+FILES[] =
+   parser
+   lexer
+   sexp
+   env
+   vm
+   builtins
+
+OCamlGeneratedFiles(parser.ml lexer.ml)
+
+OCamlLibrary(libocalisp, $(FILES))
