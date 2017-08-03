@@ -9,54 +9,54 @@ let type_error msg arg =
 let extract_numbers op =
   List.map @@ function
     | Sexp.Num n -> n
-    | s -> type_error ("Operator " ^ op ^ " takes number arguments") s
+    | s -> type_error (op ^ " takes number arguments") s
 
 let extract_strings op =
   List.map @@ function
     | Sexp.Str s -> s
-    | s -> type_error ("Operator " ^ op ^ " takes string arguments") s
+    | s -> type_error (op ^ " takes string arguments") s
 
 let builtin_cons state = function
   | [a; b] -> push state (Sexp.Cons (a, b))
-  | _ -> evaluation_error "Builtin function cons takes 2 arguments"
+  | _ -> evaluation_error "cons takes 2 arguments"
 
 let builtin_exit state = function
   | [] -> exit 0
   | [Sexp.Num n] -> exit (int_of_float n)
-  | _ -> evaluation_error "Builtin function exit takes a number argument"
+  | _ -> evaluation_error "exit takes a number argument"
 
 let builtin_error state = function
   | [] -> evaluation_error "error called"
   | [Sexp.Str s] -> evaluation_error s
-  | _ -> evaluation_error "Builtin function error takes a string argument"
+  | _ -> evaluation_error "error takes a string argument"
 
 let builtin_gensym () =
   let id = ref 0 in
   fun state args -> match args with
     | [] -> id := succ !id; push state (Sexp.Sym ("#sym." ^ string_of_int !id))
-    | _ -> evaluation_error "Builtin function gensym takes no arguments"
+    | _ -> evaluation_error "gensym takes no arguments"
 
 let builtin_car state = function
   | [Sexp.Cons (a, _)] -> push state a
   | [s] -> type_error "Not a cons" s
-  | _ -> evaluation_error "Builtin function car takes one argument"
+  | _ -> evaluation_error "car takes one argument"
 
 let builtin_cdr state = function
   | [Sexp.Cons (_, b)] -> push state b
   | [x] -> type_error "Not a cons" x
-  | _ -> evaluation_error "Builtin function car takes one argument"
+  | _ -> evaluation_error "car takes one argument"
 
 let builtin_apply state = function
   | [f; args] ->
     begin match Sexp.to_list args with
-      | Some args -> apply state f args
-      | None -> type_error "Improper list passed as apply arguments" args
+    | Some args -> apply state f args
+    | None -> type_error "Improper list passed as apply arguments" args
     end
-  | _ -> evaluation_error "Builtin function apply takes 2 arguments"
+  | _ -> evaluation_error "apply takes 2 arguments"
 
 let builtin_test name test state = function
   | [x] -> push state (Sexp.Bool (test x))
-  | _ -> evaluation_error ("Builtin function " ^ name ^ " takes one argument")
+  | _ -> evaluation_error ("" ^ name ^ " takes one argument")
 
 let builtin_test_num = builtin_test "num?" @@ function
   | Sexp.Num _ -> true
@@ -91,8 +91,8 @@ let builtin_arithmetic op zero one cat state args =
   let result = match nums with
   | [] ->
     begin match zero with
-      | None -> evaluation_error ("Operator " ^ op ^ " takes at least one argument")
-      | Some n -> n
+    | None -> evaluation_error (op ^ " takes at least one argument")
+    | Some n -> n
     end
   | [n] -> one n
   | n :: ns -> List.fold_left cat n ns
@@ -104,14 +104,6 @@ let builtin_sub = builtin_arithmetic "-" None (fun n -> -. n) (-.)
 let builtin_mul = builtin_arithmetic "*" (Some 1.) (fun n -> n) ( *.)
 let builtin_div = builtin_arithmetic "/" None (fun n -> 1. /. n) (/.)
 let builtin_mod = builtin_arithmetic "%" None (fun n -> n) mod_float
-
-let builtin_concat state args =
-  let strs = extract_strings "concat" args in
-  push state (Sexp.Str (String.concat "" strs))
-
-let builtin_length state = function
-  | [Sexp.Str s] -> push state (Sexp.Num (float_of_int (String.length s)))
-  | _ -> evaluation_error "Builtin function length takes a string argument"
 
 let builtin_eq state args =
   let rec equal a b = Sexp.(match a, b with
@@ -142,7 +134,7 @@ let builtin_compare op num_compare str_compare state args =
       | Str x ->
         let xs = extract_strings op xs in
         push state (Sexp.Bool (cmp str_compare x xs))
-      | x -> type_error ("Operator " ^ op ^ " is only defined for strings and numbers") x
+      | x -> type_error (op ^ " is only defined for strings or numbers") x
     )
 
 let builtin_lt = builtin_compare "<" (<) (<)
@@ -154,7 +146,7 @@ let builtin_callcc state = function
   | [f] ->
     let cont = capture_cont state in
     apply state f [cont]
-  | _ -> evaluation_error ("Builtin function call/cc takes one argument")
+  | _ -> evaluation_error ("call/cc takes one argument")
 
 let builtin_eval state = function
   | [s] ->
@@ -164,7 +156,7 @@ let builtin_eval state = function
       | Error e -> Sexp.Cons (Sexp.Bool false, Sexp.Str e)
     in
     push state result
-  | _ -> evaluation_error ("Builtin function eval takes one argument")
+  | _ -> evaluation_error ("eval takes one argument")
 
 let builtin_macroexpand name recurse state = function
   | [s] ->
@@ -174,7 +166,37 @@ let builtin_macroexpand name recurse state = function
       | Error e -> Sexp.Cons (Sexp.Bool false, Sexp.Str e)
     in
     push state result
-  | _ -> evaluation_error ("Builtin function " ^ name ^ " takes one argument")
+  | _ -> evaluation_error ("" ^ name ^ " takes one argument")
+
+let builtin_str state args =
+  let bytes = Array.of_list (extract_numbers "str" args) in
+  let str = String.init (Array.length bytes) (fun i -> Char.chr (int_of_float bytes.(i))) in
+  push state (Sexp.Str str)
+
+let builtin_str_ref state = function
+  | [Sexp.Str s; Sexp.Num n] -> push state (Sexp.Num (float_of_int (Char.code s.[int_of_float n])))
+  | _ -> evaluation_error "str-ref takes string and index"
+
+let builtin_str_bytesize state = function
+  | [Sexp.Str s] -> push state (Sexp.Num (float_of_int (String.length s)))
+  | _ -> evaluation_error "str-bytesize takes a string argument"
+
+let builtin_str_concat state args =
+  let strs = extract_strings "concat" args in
+  push state (Sexp.Str (String.concat "" strs))
+
+let builtin_substr state = function
+  | [Sexp.Str s; Sexp.Num i; Sexp.Num l] ->
+      push state (Sexp.Str (String.sub s (int_of_float i) (int_of_float l)))
+  | _ -> evaluation_error "substr takes string, index, and length"
+
+let builtin_num_to_str state = function
+  | [Sexp.Num _ as n] -> push state (Sexp.Str (Vm.Value.to_string n))
+  | _ -> evaluation_error "num->str takes a number argument"
+
+let builtin_str_to_num state = function
+  | [Sexp.Str s] -> push state (Sexp.Num (float_of_string s))
+  | _ -> evaluation_error "str->num takes a string argument"
 
 let builtin_print state args =
   List.iter (function
@@ -185,11 +207,11 @@ let builtin_print state args =
 
 let builtin_newline state = function
   | [] -> print_newline (); push state Sexp.Nil
-  | _ -> evaluation_error "Builtin function newline takes no arguments"
+  | _ -> evaluation_error "newline takes no arguments"
 
 let builtin_inspect state = function
   | [x] -> push state (Sexp.Str (Vm.Value.to_string x))
-  | _ -> evaluation_error "Builtin function inspect takes one argument"
+  | _ -> evaluation_error "inspect takes one argument"
 
 let register context =
   List.iter (fun (name, f) ->
@@ -222,9 +244,6 @@ let register context =
     "/", builtin_div;
     "%", builtin_mod;
 
-    "concat", builtin_concat;
-    "length", builtin_length;
-
     "=", builtin_eq;
     "<", builtin_lt;
     ">", builtin_gt;
@@ -236,6 +255,14 @@ let register context =
     "eval", builtin_eval;
     "macroexpand", builtin_macroexpand "macroexpand" true;
     "macroexpand-1", builtin_macroexpand "macroexpand-1" false;
+
+    "str", builtin_str;
+    "str-ref", builtin_str_ref;
+    "str-bytesize", builtin_str_bytesize;
+    "str-concat", builtin_str_concat;
+    "substr", builtin_substr;
+    "num->str", builtin_num_to_str;
+    "str->num", builtin_str_to_num;
 
     "print", builtin_print;
     "newline", builtin_newline;
