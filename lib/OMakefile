@@ -3,6 +3,7 @@ FILES[] =
    lexer
    sexp
    env
+   port
    vm
    builtins
 

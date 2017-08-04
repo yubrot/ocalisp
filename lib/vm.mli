@@ -5,9 +5,15 @@ type native
 
 module Value : sig
   type t = native Sexp.t
+
+  val of_port : Port.t -> t
+  val to_port : t -> Port.t option
+
   val to_string : t -> string
+
   val is_proc : t -> bool
   val is_meta : t -> bool
+  val is_port : t -> bool
 end
 
 module Code : sig

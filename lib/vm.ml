@@ -26,6 +26,7 @@ and native =
   | Builtin of builtin
   | Macro of env * pattern * code
   | Syntax of syntax
+  | Port of Port.t
 
 and builtin = {
   run: state -> value list -> unit;
@@ -54,12 +55,20 @@ and t = {
 module Value = struct
   type t = value
 
+  let of_port h =
+    Sexp.Pure (Port h)
+
+  let to_port = function
+    | Sexp.Pure (Port r) -> Some r
+    | _ -> None
+
   let to_string =
     Sexp.to_string @@ function
       | Fun _ -> "<fun>"
       | Builtin _ -> "<builtin>"
       | Macro _ -> "<macro>"
       | Syntax _ -> "<syntax>"
+      | Port _ -> "<port>"
 
   let is_proc = function
     | Sexp.Pure (Fun _ | Builtin _) -> true
@@ -67,6 +76,10 @@ module Value = struct
 
   let is_meta = function
     | Sexp.Pure (Macro _ | Syntax _) -> true
+    | _ -> false
+
+  let is_port = function
+    | Sexp.Pure (Port _) -> true
     | _ -> false
 
   let on_env env = function
