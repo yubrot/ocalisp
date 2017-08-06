@@ -353,7 +353,11 @@ let builtin_write_line state args =
     flush ch;
     Sexp.Num (float_of_int (String.length str + 1))
 
-let register context =
+let builtin_args_gen env_args state args =
+  take_none "args" args;
+  push state (Sexp.of_list (List.map (fun s -> Sexp.Str s) env_args))
+
+let register args context =
   List.iter (fun (name, f) ->
       Vm.register_builtin name f context
     ) [
@@ -420,4 +424,6 @@ let register context =
     "write-byte", builtin_write_byte;
     "write-str", builtin_write_str;
     "write-line", builtin_write_line;
+
+    "args", builtin_args_gen args;
   ]

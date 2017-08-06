@@ -30,16 +30,34 @@ let repl ctx =
     | Error e -> prerr_endline e
   done
 
-let boot ctx =
-  Builtins.register ctx;
-  let lexbuf = Lexing.from_channel (open_in "lispboot/boot.lisp") in
-  match exec ctx lexbuf with
-  | Ok _ -> ()
-  | Error e -> prerr_endline e; exit 1
+let init ctx boot args =
+  Builtins.register args ctx;
+  if boot then
+    let lexbuf = Lexing.from_channel (open_in "lispboot/boot.lisp") in
+    match exec ctx lexbuf with
+    | Ok _ -> ()
+    | Error e -> prerr_endline e; exit 1
 
 let () =
   let ctx = Vm.create () in
-  match Sys.argv with
-  | [| _; "-test"; test |] -> Builtins.register ctx; Testrunner.run ctx test
-  | [| _; file |] -> boot ctx; exec_file ctx file
-  | _ -> boot ctx; repl ctx
+  match Array.to_list Sys.argv with
+  | [] | [_] ->
+      init ctx true [];
+      repl ctx
+  | _ :: "-test" :: tests ->
+      init ctx false [];
+      List.iter (Testrunner.run ctx) tests
+  | _ :: ls ->
+      let files = ref [] in
+      let args = ref [] in
+      let args_started = ref false in
+      List.iter (fun s ->
+        if !args_started then
+          args := s :: !args
+        else if s = "--" then
+          args_started := true
+        else
+          files := s :: !files
+      ) ls;
+      init ctx true (List.rev !args);
+      List.iter (exec_file ctx) (List.rev !files)
