@@ -27,6 +27,7 @@ and native =
   | Macro of env * pattern * code
   | Syntax of syntax
   | Port of Port.t
+  | Vec of value array
 
 and builtin = {
   run: state -> value list -> unit;
@@ -55,6 +56,16 @@ and t = {
 module Value = struct
   type t = value
 
+  let rec to_string x =
+    Sexp.to_string (function
+      | Fun _ -> "<fun>"
+      | Builtin _ -> "<builtin>"
+      | Macro _ -> "<macro>"
+      | Syntax _ -> "<syntax>"
+      | Port _ -> "<port>"
+      | Vec arr -> to_string (Sexp.of_list (Sexp.Sym "vec" :: Array.to_list arr))
+    ) x
+
   let of_port h =
     Sexp.Pure (Port h)
 
@@ -62,13 +73,12 @@ module Value = struct
     | Sexp.Pure (Port r) -> Some r
     | _ -> None
 
-  let to_string =
-    Sexp.to_string @@ function
-      | Fun _ -> "<fun>"
-      | Builtin _ -> "<builtin>"
-      | Macro _ -> "<macro>"
-      | Syntax _ -> "<syntax>"
-      | Port _ -> "<port>"
+  let of_vec arr =
+    Sexp.Pure (Vec arr)
+
+  let to_vec = function
+    | Sexp.Pure (Vec arr) -> Some arr
+    | _ -> None
 
   let is_proc = function
     | Sexp.Pure (Fun _ | Builtin _) -> true
@@ -80,6 +90,10 @@ module Value = struct
 
   let is_port = function
     | Sexp.Pure (Port _) -> true
+    | _ -> false
+
+  let is_vec = function
+    | Sexp.Pure (Vec _) -> true
     | _ -> false
 
   let on_env env = function

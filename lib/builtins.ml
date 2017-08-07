@@ -28,6 +28,8 @@ let take_list name = enforce name Sexp.to_list
 
 let take_port name = enforce name Vm.Value.to_port
 
+let take_vec name = enforce name Vm.Value.to_vec
+
 let take_port_in p =
   match Port.to_in p with
   | None -> evaluation_error "port is not available for reading"
@@ -53,6 +55,10 @@ let take_two name = function
 let take_three name = function
   | [a; b; c] -> (a, b, c)
   | _ -> evaluation_error (name ^ " takes three arguments")
+
+let take_five name = function
+  | [a; b; c; d; e] -> (a, b, c, d, e)
+  | _ -> evaluation_error (name ^ " takes five arguments")
 
 let builtin_cons state args =
   let (a, b) = take_two "cons" args in
@@ -123,6 +129,8 @@ let builtin_test_proc = builtin_test "proc?" Vm.Value.is_proc
 let builtin_test_meta = builtin_test "meta?" Vm.Value.is_meta
 
 let builtin_test_port = builtin_test "port?" Vm.Value.is_port
+
+let builtin_test_vec = builtin_test "vec?" Vm.Value.is_vec
 
 let builtin_arithmetic op zero one cat state args =
   let nums = List.map (take_num "number") args in
@@ -260,6 +268,55 @@ let builtin_str_to_num state args =
   in
   push state s
 
+let builtin_vec state args =
+  let s = Vm.Value.of_vec (Array.of_list args) in
+  push state s
+
+let builtin_vec_make state args =
+  let (length, init) = take_two "vec-make" args in
+  let length = int_of_float (take_num "length" length) in
+  let s = Vm.Value.of_vec (Array.make length init) in
+  push state s
+
+let builtin_vec_ref state args =
+  let (vec, n) = take_two "vec-ref" args in
+  let arr = take_vec "vector" vec in
+  let n = int_of_float (take_num "index" n) in
+  let s =
+    try arr.(n)
+    with Invalid_argument _ -> Sexp.Nil
+  in
+  push state s
+
+let builtin_vec_length state args =
+  let vec = take_one "vec-length" args in
+  let arr = take_vec "vector" vec in
+  let s = Sexp.Num (float_of_int (Array.length arr)) in
+  push state s
+
+let builtin_vec_set state args =
+  let (vec, n, item) = take_three "vec-set!" args in
+  let arr = take_vec "vector" vec in
+  let n = int_of_float (take_num "index" n) in
+  begin
+    try arr.(n) <- item
+    with Invalid_argument _ -> evaluation_error "Index out of range"
+  end;
+  push state Sexp.Nil
+
+let builtin_vec_copy state args =
+  let (dest, dest_start, src, src_start, length) = take_five "vec-copy!" args in
+  let dest = take_vec "destination vector" dest in
+  let dest_start = int_of_float (take_num "destination index" dest_start) in
+  let src = take_vec "source vector" src in
+  let src_start = int_of_float (take_num "source index" src_start) in
+  let length = int_of_float (take_num "length" length) in
+  begin
+    try Array.blit src src_start dest dest_start length
+    with Invalid_argument _ -> evaluation_error "Index out of range"
+  end;
+  push state Sexp.Nil
+
 let sym_eof = Sexp.Sym "eof"
 
 let try_io f =
@@ -382,6 +439,7 @@ let register args context =
     "proc?", builtin_test_proc;
     "meta?", builtin_test_meta;
     "port?", builtin_test_port;
+    "vec?", builtin_test_vec;
 
     "+", builtin_add;
     "-", builtin_sub;
@@ -409,6 +467,13 @@ let register args context =
     "sym->str", builtin_sym_to_str;
     "num->str", builtin_num_to_str;
     "str->num", builtin_str_to_num;
+
+    "vec", builtin_vec;
+    "vec-make", builtin_vec_make;
+    "vec-ref", builtin_vec_ref;
+    "vec-length", builtin_vec_length;
+    "vec-set!", builtin_vec_set;
+    "vec-copy!", builtin_vec_copy;
 
     "open", builtin_open;
     "close", builtin_close;
