@@ -1,8 +1,14 @@
 FILES[] =
 	testrunner
+	bootcode
 	main
 
 OCAMLINCLUDES += ../lib
 OCAML_LIBS[] += ../lib/libocalisp
+
+bootcode.ml: ../lispboot/boot.lisp embed.ml
+	ocaml embed.ml <../lispboot/boot.lisp >bootcode.ml
+
+OCamlGeneratedFiles(bootcode.ml)
 
 OCamlProgram(ocalisp, $(FILES))

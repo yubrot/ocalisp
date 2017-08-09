@@ -33,7 +33,7 @@ let repl ctx =
 let init ctx boot args =
   Builtins.register args ctx;
   if boot then
-    let lexbuf = Lexing.from_channel (open_in "lispboot/boot.lisp") in
+    let lexbuf = Lexing.from_string Bootcode.value in
     match exec ctx lexbuf with
     | Ok _ -> ()
     | Error e -> prerr_endline e; exit 1

@@ -9,14 +9,6 @@ _build
 .omakedb*
 *.omc
 
-# lexer
-lexer.*
-!lexer.mll
-
-# parser
-parser.*
-!parser.mly
-
 *.cmi
 *.cmx
 *.cmxa

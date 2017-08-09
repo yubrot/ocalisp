@@ -1,0 +1,8 @@
+# lexer
+lexer.*
+!lexer.mll
+
+# parser
+parser.*
+!parser.mly
+
