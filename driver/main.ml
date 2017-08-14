@@ -13,7 +13,7 @@ let exec ctx lexbuf =
 let exec_file ctx file =
   match exec ctx (Lexing.from_channel (open_in file)) with
   | Ok _ -> ()
-  | Error e -> prerr_endline e
+  | Error e -> prerr_endline (file ^ ": " ^ e); exit 1
 
 let repl ctx =
   prerr_endline "[ocalisp REPL]";
@@ -36,7 +36,7 @@ let init ctx boot args =
     let lexbuf = Lexing.from_string Bootcode.value in
     match exec ctx lexbuf with
     | Ok _ -> ()
-    | Error e -> prerr_endline e; exit 1
+    | Error e -> prerr_endline ("init: " ^ e); exit 1
 
 let () =
   let ctx = Vm.create () in
