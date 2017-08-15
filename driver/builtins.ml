@@ -193,23 +193,10 @@ let builtin_callcc state args =
   let cont = capture_cont state in
   apply state f [cont]
 
-let builtin_eval state args =
-  let s = take_one "eval" args in
-  let result =
-    match Vm.eval (Vm.context state) s with
-    | Ok v -> Sexp.Cons (Sexp.Bool true, v)
-    | Error e -> Sexp.Cons (Sexp.Bool false, Sexp.Str e)
-  in
-  push state result
-
-let builtin_macroexpand name recurse state args =
-  let s = take_one name args in
-  let result =
-    match Vm.macroexpand recurse (Vm.context state) s with
-    | Ok v -> Sexp.Cons (Sexp.Bool true, v)
-    | Error e -> Sexp.Cons (Sexp.Bool false, Sexp.Str e)
-  in
-  push state result
+let builtin_never state args =
+  match args with
+  | [] -> evaluation_error "never takes at least one argument"
+  | f :: args -> apply_never state f args
 
 let builtin_str state args =
   let bytes = Array.of_list (List.map (take_num "byte") args) in
@@ -394,7 +381,7 @@ let builtin_write_byte state args =
 
 let builtin_write_str state args =
   let (str, p) = take_two "write-str" args in
-  let str = take_str "str" str in
+  let str = take_str "string" str in
   let ch = take_port_out (take_port "port" p) in
   push state @@ try_io @@ fun () ->
     output_string ch str;
@@ -402,7 +389,7 @@ let builtin_write_str state args =
 
 let builtin_write_line state args =
   let (str, p) = take_two "write-line" args in
-  let str = take_str "str" str in
+  let str = take_str "string" str in
   let ch = take_port_out (take_port "port" p) in
   push state @@ try_io @@ fun () ->
     output_string ch str;
@@ -410,9 +397,34 @@ let builtin_write_line state args =
     flush ch;
     Sexp.Num (float_of_int (String.length str + 1))
 
+let builtin_flush state args =
+  let p = take_one "flush" args in
+  let ch = take_port_out (take_port "port" p) in
+  push state @@ try_io @@ fun () ->
+    flush ch;
+    Sexp.Nil
+
 let builtin_args_gen env_args state args =
   take_none "args" args;
   push state (Sexp.of_list (List.map (fun s -> Sexp.Str s) env_args))
+
+let builtin_eval state args =
+  let s = take_one "eval" args in
+  let result =
+    match Vm.eval (Vm.context state) s with
+    | Ok v -> Sexp.Cons (Sexp.Bool true, v)
+    | Error e -> Sexp.Cons (Sexp.Bool false, Sexp.Str e)
+  in
+  push state result
+
+let builtin_macroexpand name recurse state args =
+  let s = take_one name args in
+  let result =
+    match Vm.macroexpand recurse (Vm.context state) s with
+    | Ok v -> Sexp.Cons (Sexp.Bool true, v)
+    | Error e -> Sexp.Cons (Sexp.Bool false, Sexp.Str e)
+  in
+  push state result
 
 let register args context =
   List.iter (fun (name, f) ->
@@ -454,10 +466,7 @@ let register args context =
     ">=", builtin_ge;
 
     "call/cc", builtin_callcc;
-
-    "eval", builtin_eval;
-    "macroexpand", builtin_macroexpand "macroexpand" true;
-    "macroexpand-1", builtin_macroexpand "macroexpand-1" false;
+    "never", builtin_never;
 
     "str", builtin_str;
     "str-ref", builtin_str_ref;
@@ -489,6 +498,11 @@ let register args context =
     "write-byte", builtin_write_byte;
     "write-str", builtin_write_str;
     "write-line", builtin_write_line;
+    "flush", builtin_flush;
 
     "args", builtin_args_gen args;
+
+    "eval", builtin_eval;
+    "macroexpand", builtin_macroexpand "macroexpand" true;
+    "macroexpand-1", builtin_macroexpand "macroexpand-1" false;
   ]

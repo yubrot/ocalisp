@@ -37,6 +37,7 @@ module Exec : sig
 
   val push : t -> Value.t -> unit
   val apply : t -> Value.t -> Value.t list -> unit
+  val apply_never : t -> Value.t -> Value.t list -> unit
   val capture_cont : t -> Value.t
 end
 

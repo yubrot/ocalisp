@@ -290,6 +290,12 @@ module Exec = struct
     | _ ->
       raise (Evaluation_error ("Cannot call: " ^ Value.to_string f))
 
+  let apply_never state f args =
+    state.stack <- [];
+    state.code <- [Leave];
+    state.dump <- [];
+    apply state f args
+
   let capture_cont state =
     let { stack; env; code; dump } = state in
     let ret state v =
