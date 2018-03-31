@@ -12,10 +12,10 @@ This is my hobby project to learn OCaml.
 ## Internal
 
 The design of the implementation is heavily inspired by [SECD machine](https://en.wikipedia.org/wiki/SECD_machine).
-For example, the semantics of [Vm.state](vm.ml#L39) is almost same as SECD machine registers.
+For example, the semantics of each fields of [Vm.state](lib/vm.ml#L41) is almost same as SECD machine registers.
 
-At [Vm.eval](vm.ml#L349), every S-expression is compiled into [a code, a sequence of VM instructions](vm.ml#L4) after macro expansion.
-After the compilation, code execution process is performed by running instruction cycle at [Vm.Exec.run](vm.ml#L311).
+At [Vm.eval](lib/vm.ml#L400), every S-expression is macro-expanded and then compiled into [a code, a sequence of VM instructions](lib/vm.ml#L4).
+After the compilation, code execution process is performed by running instruction cycle at [Vm.Exec.run](lib/vm.ml#L348).
 
 ### Examples of VM codes
 
