@@ -25,7 +25,7 @@ let rec find k env =
     | Some e -> find k e
     | None -> None
 
-let rec get k env =
+let get k env =
   match find k env with
   | Some v -> v
   | None -> raise (UndefinedVariable k)

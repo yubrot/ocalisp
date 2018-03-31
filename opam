@@ -1,0 +1,12 @@
+opam-version: "1.2"
+name: "ocalisp"
+version: "0.0.1"
+maintainer: "yubrot <yubrot@gmail.com>"
+authors: "yubrot <yubrot@gmail.com>"
+homepage: "https://github.com/yubrot/ocalisp"
+license: "BSD3"
+depends: [
+  "menhir"
+  "omake" {build}
+]
+available: [ocaml-version >= "4.06.0"]

@@ -1,3 +1,7 @@
+MENHIR_ENABLED = true
+
+MENHIR_FLAGS += --infer --explain
+
 FILES[] =
    parser
    lexer

@@ -103,8 +103,6 @@ end
 
 
 module Pattern = struct
-  type t = pattern
-
   let to_string { fixed; rest } =
     let fixed = List.map (fun sym -> Sexp.Sym sym) fixed in
     let rest = match rest with
@@ -137,7 +135,7 @@ module Pattern = struct
     match pattern.rest, bind_fixed (pattern.fixed, args) with
     | Some k, rest_args -> Env.def k (Sexp.of_list rest_args) env
     | None, [] -> ()
-    | None, rest_args -> argument_error ""
+    | None, _ -> argument_error ""
 end
 
 module Code = struct
@@ -225,11 +223,11 @@ let syntax_env () =
     | pattern :: body -> [Ldm (Pattern.build pattern, compile_begin compile body)]
     | [] -> raise (Evaluation_error "Syntax error: expected (macro pattern body...)")
   in
-  let compile_builtin compile = function
+  let compile_builtin _compile = function
     | [Sexp.Sym sym] -> [Ldb sym]
     | _ -> raise (Evaluation_error "Syntax error: expected (builtin sym)")
   in
-  let compile_quote compile = function
+  let compile_quote _compile = function
     | [s] -> [Ldc s]
     | _ -> raise (Evaluation_error "Syntax error: expected (quote expr)")
   in
@@ -331,7 +329,7 @@ module Exec = struct
       enter state (Env.create (Some state.env)) branch_code
     | App argc ->
       let args = ref [] in
-      for i = 1 to argc do args := pop state :: !args done;
+      for _ = 1 to argc do args := pop state :: !args done;
       let f = pop state in
       apply state f !args
     | Leave ->

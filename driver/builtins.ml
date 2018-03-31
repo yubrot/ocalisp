@@ -64,12 +64,12 @@ let builtin_cons state args =
   let (a, b) = take_two "cons" args in
   push state (Sexp.Cons (a, b))
 
-let builtin_exit state = function
+let builtin_exit _state = function
   | [] -> exit 0
   | [Sexp.Num n] -> exit (int_of_float n)
   | _ -> evaluation_error "exit takes exitcode"
 
-let builtin_error state = function
+let builtin_error _state = function
   | [] -> evaluation_error "error called"
   | [s] -> evaluation_error (take_str "error message" s)
   | _ -> evaluation_error "error takes an error message"
@@ -180,7 +180,7 @@ let builtin_compare op num_compare str_compare state args =
       | Str x ->
         let xs = List.map (take_str "string") xs in
         push state (Sexp.Bool (cmp str_compare x xs))
-      | x -> evaluation_error (op ^ " is only defined for strings or numbers")
+      | _ -> evaluation_error (op ^ " is only defined for strings or numbers")
     )
 
 let builtin_lt = builtin_compare "<" (<) (<)

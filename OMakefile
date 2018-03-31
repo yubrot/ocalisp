@@ -1,9 +1,7 @@
 NATIVE_ENABLED = $(OCAMLOPT_EXISTS)
 BYTE_ENABLED = $(not $(NATIVE_ENABLED))
-MENHIR_ENABLED = true
 
-OCAMLFLAGS += -safe-string
-MENHIR_FLAGS += --infer --explain
+OCAMLFLAGS += -safe-string -w @A-4-9-29-30-40-42
 
 USE_OCAMLFIND = true
 
@@ -12,10 +10,10 @@ USE_OCAMLFIND = true
 .PHONY: all test
 .DEFAULT: all
 
-all: ocalisp test
+all: ocalisp$(EXE) test
 
-ocalisp: driver/ocalisp$(EXE)
+ocalisp$(EXE): driver/ocalisp$(EXE)
 	cp driver/ocalisp$(EXE) .
 
-test: ocalisp lispboot/test
-	./ocalisp -test lispboot/test
+test: ocalisp$(EXE) lispboot/test
+	./ocalisp$(EXE) -test lispboot/test
