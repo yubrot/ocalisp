@@ -1,6 +1,6 @@
 # executable
 ocalisp*
-!ocalisp.ml
+!ocalisp.opam
 
 # ocamlbuild
 _build
