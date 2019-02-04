@@ -1,16 +1,3 @@
-# executable
-ocalisp*
-!ocalisp.opam
-
-# ocamlbuild
 _build
-
-# omake
-.omakedb*
-*.omc
-
-*.cmi
-*.cmx
-*.cmxa
-*.o
-*.a
+*.install
+.merlin

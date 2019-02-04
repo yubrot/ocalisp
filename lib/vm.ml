@@ -295,7 +295,7 @@ module Exec = struct
     apply state f args
 
   let capture_cont state =
-    let { stack; env; code; dump } = state in
+    let { stack; env; code; dump; _ } = state in
     let ret state v =
       state.stack <- stack;
       state.env <- env;

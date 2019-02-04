@@ -1,3 +1,5 @@
+open Ocalisp
+
 type command =
   | ParseSuccess of (string * string)
   | ParseFailure of string

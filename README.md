@@ -4,10 +4,8 @@ ocalisp
 ocalisp is a tiny Lisp-1 implementation.
 This is my hobby project to learn OCaml.
 
-## Build and run
-
-    $ omake
-    $ ./ocalisp lispboot/examples/conways-gol.lisp
+    $ dune exec ocalisp -- lispboot/examples/conways-gol.lisp
+    $ dune exec ocalisp -- -test lispboot/test
 
 ## Internal
 

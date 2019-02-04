@@ -1,3 +1,4 @@
+open Ocalisp
 open Vm.Exec
 
 let evaluation_error msg =

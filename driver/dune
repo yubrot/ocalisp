@@ -1,0 +1,10 @@
+(rule
+  (targets bootcode.ml)
+  (deps embed.ml ../lispboot/boot.lisp)
+  (action (run ocaml embed.ml -i ../lispboot/boot.lisp -o bootcode.ml)))
+
+(executable
+  (name main)
+  (public_name ocalisp)
+  (libraries ocalisp.lib)
+  (flags (:standard -safe-string -w @A-4-9-29-30-40-42)))

@@ -1,3 +1,5 @@
+open Ocalisp
+
 let exec ctx lexbuf =
   match Lexer.parse_program lexbuf with
   | Ok program ->
