@@ -1,7 +1,7 @@
 (rule
   (targets bootcode.ml)
-  (deps embed.ml ../lispboot/boot.lisp)
-  (action (run ocaml embed.ml -i ../lispboot/boot.lisp -o bootcode.ml)))
+  (deps embed.ml ../rosetta-lisp/boot.lisp)
+  (action (run ocaml embed.ml -i ../rosetta-lisp/boot.lisp -o bootcode.ml)))
 
 (executable
   (name main)
