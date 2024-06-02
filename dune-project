@@ -8,7 +8,7 @@
 
 (maintainers "yubrot")
 
-(license BSD3)
+(license BSD-3-Clause)
 
 (source
  (github yubrot/ocalisp))

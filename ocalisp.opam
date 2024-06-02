@@ -4,7 +4,7 @@ synopsis: "A tiny Lisp-1 implementation"
 description: "A tiny Lisp-1 implementation"
 maintainer: ["yubrot"]
 authors: ["yubrot"]
-license: "BSD3"
+license: "BSD-3-Clause"
 homepage: "https://github.com/yubrot/ocalisp"
 bug-reports: "https://github.com/yubrot/ocalisp/issues"
 depends: [
