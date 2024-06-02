@@ -1,10 +1,11 @@
 (menhir
-  (modules parser))
+ (modules parser))
 
 (ocamllex
-  (modules lexer))
+ (modules lexer))
 
 (library
-  (name ocalisp)
-  (public_name ocalisp.lib)
-  (flags (:standard -safe-string -w @A-4-9-29-30-40-42)))
+ (name ocalisp)
+ (public_name ocalisp.lib)
+ (flags
+  (:standard -safe-string -w @A-4-9-29-30-40-42)))

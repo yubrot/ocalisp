@@ -1,10 +1,20 @@
 (rule
-  (targets bootcode.ml)
-  (deps embed.ml ../rosetta-lisp/boot.lisp)
-  (action (run ocaml embed.ml -i ../rosetta-lisp/boot.lisp -o bootcode.ml)))
+ (targets bootcode.ml bootcode.mli)
+ (deps embed.ml ../rosetta-lisp/boot.lisp)
+ (action
+  (run
+   ocaml
+   embed.ml
+   -src
+   ../rosetta-lisp/boot.lisp
+   -ml
+   bootcode.ml
+   -mli
+   bootcode.mli)))
 
 (executable
-  (name main)
-  (public_name ocalisp)
-  (libraries ocalisp.lib)
-  (flags (:standard -safe-string -w @A-4-9-29-30-40-42)))
+ (name main)
+ (public_name ocalisp)
+ (libraries ocalisp.lib)
+ (flags
+  (:standard -safe-string -w @A-4-9-29-30-40-42)))

@@ -70,16 +70,16 @@ let fail_if_differ i o =
     fail i
 
 let parse_or_fail i =
-  fail_if_error (Lexer.parse_line (Lexing.from_string i))
+  fail_if_error (Lexer.parse_s (Lexing.from_string i))
 
 let run_command ctx = function
   | ParseSuccess (i, o) ->
-    begin match Lexer.parse_line (Lexing.from_string i) with
+    begin match Lexer.parse_s (Lexing.from_string i) with
       | Error e -> fail e
       | Ok s -> fail_if_differ (Vm.Value.to_string s) o
     end
   | ParseFailure i ->
-    begin match Lexer.parse_line (Lexing.from_string i) with
+    begin match Lexer.parse_s (Lexing.from_string i) with
       | Error _ -> ()
       | Ok s -> fail (Vm.Value.to_string s)
     end

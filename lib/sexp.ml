@@ -19,6 +19,17 @@ let rec to_list = function
     end
   | _ -> None
 
+let map f =
+  let rec map = function
+    | Num n -> Num n
+    | Sym s -> Sym s
+    | Str s -> Str s
+    | Cons (a, b) -> Cons (map a, map b)
+    | Nil -> Nil
+    | Bool b -> Bool b
+    | Pure a -> Pure (f a)
+  in map
+
 let test = function
   | Bool b -> b
   | _ -> true

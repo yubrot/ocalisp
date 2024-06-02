@@ -44,10 +44,10 @@ and read_string s = parse
 
 {
   let parse_program lexbuf =
-    try Ok (Parser.program read lexbuf)
+    try Ok (List.map (Sexp.map Void.absurd) (Parser.program read lexbuf))
     with _ -> Error "Parse error"
 
-  let parse_line lexbuf =
-    try Ok (Parser.s read lexbuf)
+  let parse_s lexbuf =
+    try Ok (Sexp.map Void.absurd (Parser.s read lexbuf))
     with _ -> Error "Parse error"
 }

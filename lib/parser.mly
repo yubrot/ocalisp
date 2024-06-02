@@ -4,9 +4,9 @@
 %token LPAREN RPAREN LBRACK RBRACK DOT TRUE FALSE QUOTE QUASIQUOTE UNQUOTE UNQUOTE_SPLICING EOF
 
 %start program
-%type <'a Sexp.t list> program
+%type <Void.t Sexp.t list> program
 %start s
-%type <'a Sexp.t> s
+%type <Void.t Sexp.t> s
 
 %%
 

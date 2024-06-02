@@ -10,6 +10,7 @@ type +'a t =
 val of_list : 'a t list -> 'a t
 val to_list : 'a t -> 'a t list option
 
+val map : ('a -> 'b) -> 'a t -> 'b t
 val test : 'a t -> bool
 
 val quote : 'a t -> 'a t

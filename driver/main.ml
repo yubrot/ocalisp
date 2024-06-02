@@ -23,7 +23,7 @@ let repl ctx =
   while true do
     prerr_string "> ";
     flush stderr;
-    match Lexer.parse_line lexbuf with
+    match Lexer.parse_s lexbuf with
     | Ok s ->
       begin match Vm.eval ctx s with
         | Ok v -> print_endline (Vm.Value.to_string v)
