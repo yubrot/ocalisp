@@ -8,15 +8,11 @@ module Value : sig
 
   val to_string : t -> string
 
-  val of_port : Port.t -> t
-  val to_port : t -> Port.t option
-
   val of_vec : t array -> t
   val to_vec : t -> t array option
 
   val is_proc : t -> bool
   val is_meta : t -> bool
-  val is_port : t -> bool
   val is_vec : t -> bool
 end
 

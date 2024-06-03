@@ -27,19 +27,7 @@ let take_cons name = enforce name @@ function
 
 let take_list name = enforce name Sexp.to_list
 
-let take_port name = enforce name Vm.Value.to_port
-
 let take_vec name = enforce name Vm.Value.to_vec
-
-let take_port_in p =
-  match Port.to_in p with
-  | None -> evaluation_error "port is not available for reading"
-  | Some ch -> ch
-
-let take_port_out p =
-  match Port.to_out p with
-  | None -> evaluation_error "port is not available for writing"
-  | Some ch -> ch
 
 let take_none name = function
   | [] -> ()
@@ -129,8 +117,6 @@ let builtin_test_proc = builtin_test "proc?" Vm.Value.is_proc
 
 let builtin_test_meta = builtin_test "meta?" Vm.Value.is_meta
 
-let builtin_test_port = builtin_test "port?" Vm.Value.is_port
-
 let builtin_test_vec = builtin_test "vec?" Vm.Value.is_vec
 
 let builtin_arithmetic op zero one cat state args =
@@ -207,8 +193,8 @@ let builtin_str state args =
   in
   push state (Sexp.Str str)
 
-let builtin_str_ref state args =
-  let (str, index) = take_two "str-ref" args in
+let builtin_str_char_at state args =
+  let (str, index) = take_two "str-char-at" args in
   let str = take_str "string" str in
   let index = take_num "index" index in
   let s =
@@ -217,8 +203,8 @@ let builtin_str_ref state args =
   in
   push state s
 
-let builtin_str_bytesize state args =
-  let str = take_one "str-bytesize" args in
+let builtin_str_length state args =
+  let str = take_one "str-length" args in
   let str = take_str "string" str in
   push state (Sexp.Num (float_of_int (String.length str)))
 
@@ -266,20 +252,20 @@ let builtin_vec_make state args =
   let s = Vm.Value.of_vec (Array.make length init) in
   push state s
 
-let builtin_vec_ref state args =
-  let (vec, n) = take_two "vec-ref" args in
+let builtin_vec_length state args =
+  let vec = take_one "vec-length" args in
+  let arr = take_vec "vector" vec in
+  let s = Sexp.Num (float_of_int (Array.length arr)) in
+  push state s
+
+let builtin_vec_get state args =
+  let (vec, n) = take_two "vec-get" args in
   let arr = take_vec "vector" vec in
   let n = int_of_float (take_num "index" n) in
   let s =
     try arr.(n)
     with Invalid_argument _ -> Sexp.Nil
   in
-  push state s
-
-let builtin_vec_length state args =
-  let vec = take_one "vec-length" args in
-  let arr = take_vec "vector" vec in
-  let s = Sexp.Num (float_of_int (Array.length arr)) in
   push state s
 
 let builtin_vec_set state args =
@@ -305,104 +291,43 @@ let builtin_vec_copy state args =
   end;
   push state Sexp.Nil
 
-let sym_eof = Sexp.Sym "eof"
-
 let try_io f =
   try Sexp.Cons (Sexp.Bool true, f ())
   with Sys_error e -> Sexp.Cons (Sexp.Bool false, Sexp.Str e)
 
-let handle_eof f =
-  try f ()
-  with End_of_file -> sym_eof
-
-let builtin_open state args =
-  let (filepath, mode) = take_two "open" args in
+let builtin_read_file_text state args =
+  let filepath = take_one "read-file-text" args in
   let filepath = take_str "filepath" filepath in
-  let mode = take_str "mode" mode in
   push state @@ try_io @@ fun () ->
-    match mode with
-    | "r" -> Vm.Value.of_port (Port.of_in (open_in_bin filepath))
-    | "w" -> Vm.Value.of_port (Port.of_out (open_out_bin filepath))
-    | _ -> evaluation_error ("Unsupported mode for open: " ^ mode)
+    let chan = open_in_bin filepath in
+    let len = in_channel_length chan in
+    let buffer = Bytes.create len in
+    really_input chan buffer 0 len;
+    close_in chan;
+    Sexp.Str(Bytes.to_string buffer)
 
-let builtin_close state args =
-  let p = take_one "close" args in
-  let p = take_port "port" p in
+let builtin_write_file_text state args =
+  let (filepath, text) = take_two "write-file-text" args in
+  let filepath = take_str "filepath" filepath in
+  let text = take_str "text" text in
   push state @@ try_io @@ fun () ->
-    Port.close p;
+    let chan = open_out_bin filepath in
+    output_string chan text;
+    close_out chan;
     Sexp.Nil
 
-let builtin_stdin state args =
-  take_none "stdin" args;
-  push state (Vm.Value.of_port (Port.of_in stdin))
-
-let builtin_stdout state args =
-  take_none "stdout" args;
-  push state (Vm.Value.of_port (Port.of_out stdout))
-
-let builtin_stderr state args =
-  take_none "stderr" args;
-  push state (Vm.Value.of_port (Port.of_out stderr))
-
-let builtin_read_byte state args =
-  let p = take_one "read-byte" args in
-  let ch = take_port_in (take_port "port" p) in
+let builtin_read_console_line state args =
+  take_none "builtin_read_console_line " args;
   push state @@ try_io @@ fun () ->
-    handle_eof @@ fun () ->
-      let byte = input_byte ch in
-      Sexp.Num (float_of_int byte)
+    try Sexp.Str (read_line ())
+    with End_of_file -> Sexp.Nil
 
-let builtin_read_str state args =
-  let (size, p) = take_two "read-str" args in
-  let size = int_of_float (take_num "size" size) in
-  let ch = take_port_in (take_port "port" p) in
+let builtin_write_console state args =
+  let text = take_one "write-console" args in
+  let text = take_str "filepath" text in
   push state @@ try_io @@ fun () ->
-    let bytes = Bytes.create size in
-    let bytes_read = input ch bytes 0 size in
-    if bytes_read = 0 then
-      sym_eof
-    else
-      Sexp.Str (Bytes.sub_string bytes 0 bytes_read)
-
-let builtin_read_line state args =
-  let p = take_one "read-line" args in
-  let ch = take_port_in (take_port "port" p) in
-  push state @@ try_io @@ fun () ->
-    handle_eof @@ fun () ->
-      let s = input_line ch in
-      Sexp.Str s
-
-let builtin_write_byte state args =
-  let (byte, p) = take_two "write-byte" args in
-  let byte = int_of_float (take_num "byte" byte) in
-  let ch = take_port_out (take_port "port" p) in
-  push state @@ try_io @@ fun () ->
-    output_byte ch byte;
-    Sexp.Num 1.
-
-let builtin_write_str state args =
-  let (str, p) = take_two "write-str" args in
-  let str = take_str "string" str in
-  let ch = take_port_out (take_port "port" p) in
-  push state @@ try_io @@ fun () ->
-    output_string ch str;
-    Sexp.Num (float_of_int (String.length str))
-
-let builtin_write_line state args =
-  let (str, p) = take_two "write-line" args in
-  let str = take_str "string" str in
-  let ch = take_port_out (take_port "port" p) in
-  push state @@ try_io @@ fun () ->
-    output_string ch str;
-    output_char ch '\n';
-    flush ch;
-    Sexp.Num (float_of_int (String.length str + 1))
-
-let builtin_flush state args =
-  let p = take_one "flush" args in
-  let ch = take_port_out (take_port "port" p) in
-  push state @@ try_io @@ fun () ->
-    flush ch;
+    print_string text;
+    flush stdout;
     Sexp.Nil
 
 let builtin_args_gen env_args state args =
@@ -451,7 +376,6 @@ let register args context =
     "bool?", builtin_test_bool;
     "proc?", builtin_test_proc;
     "meta?", builtin_test_meta;
-    "port?", builtin_test_port;
     "vec?", builtin_test_vec;
 
     "+", builtin_add;
@@ -470,8 +394,8 @@ let register args context =
     "never", builtin_never;
 
     "str", builtin_str;
-    "str-ref", builtin_str_ref;
-    "str-bytesize", builtin_str_bytesize;
+    "str-char-at", builtin_str_char_at;
+    "str-length", builtin_str_length;
     "str-concat", builtin_str_concat;
     "substr", builtin_substr;
     "sym->str", builtin_sym_to_str;
@@ -480,29 +404,17 @@ let register args context =
 
     "vec", builtin_vec;
     "vec-make", builtin_vec_make;
-    "vec-ref", builtin_vec_ref;
     "vec-length", builtin_vec_length;
+    "vec-get", builtin_vec_get;
     "vec-set!", builtin_vec_set;
     "vec-copy!", builtin_vec_copy;
 
-    "open", builtin_open;
-    "close", builtin_close;
-
-    "stdin", builtin_stdin;
-    "stdout", builtin_stdout;
-    "stderr", builtin_stderr;
-
-    "read-byte", builtin_read_byte;
-    "read-str", builtin_read_str;
-    "read-line", builtin_read_line;
-
-    "write-byte", builtin_write_byte;
-    "write-str", builtin_write_str;
-    "write-line", builtin_write_line;
-    "flush", builtin_flush;
+    "read-file-text", builtin_read_file_text;
+    "write-file-text", builtin_write_file_text;
+    "read-console-line", builtin_read_console_line;
+    "write-console", builtin_write_console;
 
     "args", builtin_args_gen args;
-
     "eval", builtin_eval;
     "macroexpand", builtin_macroexpand "macroexpand" true;
     "macroexpand-1", builtin_macroexpand "macroexpand-1" false;
